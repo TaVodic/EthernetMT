@@ -50,23 +50,24 @@ int EthernetClient::connect(IPAddress ip, uint16_t port)
 #if defined(ESP8266) || defined(ESP32)
 	if (ip == IPAddress((uint32_t)0) || ip == IPAddress(0xFFFFFFFFul)) return 0;
 #else
-	if (ip == IPAddress(0ul) || ip == IPAddress(0xFFFFFFFFul)) return 0;
+	if (ip == IPAddress(0ul) || ip == IPAddress(0xFFFFFFFFul)) return 255;
 #endif
 	_sockindex = Ethernet.socketBegin(SnMR::TCP, 0);
-	if (_sockindex >= MAX_SOCK_NUM) return 0;
+	// Serial.printf("Socket index: %d\n", _sockindex);
+	if (_sockindex >= MAX_SOCK_NUM) return 255;
 	Ethernet.socketConnect(_sockindex, rawIPAddress(ip), port);
 	uint32_t start = millis();
 	while (1) {
 		uint8_t stat = Ethernet.socketStatus(_sockindex);
-		if (stat == SnSR::ESTABLISHED) return 1;
-		if (stat == SnSR::CLOSE_WAIT) return 1;
-		if (stat == SnSR::CLOSED) return 0;
+		if (stat == SnSR::ESTABLISHED) return SnSR::ESTABLISHED;
+		if (stat == SnSR::CLOSE_WAIT) return SnSR::CLOSE_WAIT;
+		if (stat == SnSR::CLOSED) return SnSR::CLOSED;
 		if (millis() - start > _timeout) break;
 		delay(1);
 	}
 	Ethernet.socketClose(_sockindex);
 	_sockindex = MAX_SOCK_NUM;
-	return 0;
+	return 255;
 }
 
 int EthernetClient::availableForWrite(void)
